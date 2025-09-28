@@ -3,10 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { State } from './lib/State';
 
 interface SetupProps {
-    setGameState: (newState: State) => void;
+    onStartMatch: (players: { name: string, shortName: string, handicap: number }[], settings: { matchName: string, redBalls: number, framesRequired: number }, startingPlayerIndex: number) => void;
 }
 
-const Setup: React.FC<SetupProps> = ({ setGameState }) => {
+const Setup: React.FC<SetupProps> = ({ onStartMatch }) => {
     const navigate = useNavigate();
 
     const [matchName, setMatchName] = useState('Snooker Match');
@@ -27,8 +27,7 @@ const Setup: React.FC<SetupProps> = ({ setGameState }) => {
         ];
         const settings = { matchName, redBalls, framesRequired };
 
-        const newState = new State(playersInfo, settings, startingPlayerIndex);
-        setGameState(newState);
+        onStartMatch(playersInfo, settings, startingPlayerIndex);
         navigate('/'); // Navigate to the scoreboard
     };
 

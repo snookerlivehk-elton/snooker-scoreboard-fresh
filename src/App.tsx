@@ -1,96 +1,47 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Scoreboard from './Scoreboard';
 import Setup from './Setup';
 import { State } from './lib/State';
+import { Player } from './lib/Player';
 
 const App: React.FC = () => {
   const [gameState, setGameState] = useState(() => new State());
 
-  const handlePot = (ballValue: number) => {
+  const updateGameState = (updateFn: (state: State) => void) => {
     setGameState(prev => {
-      const newState = Object.assign(Object.create(Object.getPrototypeOf(prev)), prev);
-      newState.pot(ballValue);
+      const plainState = JSON.parse(JSON.stringify(prev));
+      const newState = new State();
+      Object.assign(newState, plainState);
+      newState.players = plainState.players.map((p: any) => {
+        const player = new Player(p.name, p.shortName, p.handicap);
+        Object.assign(player, p);
+        return player;
+      });
+      updateFn(newState);
       return newState;
     });
   };
 
-  const handleToggleFreeBall = () => {
-    setGameState(prev => {
-      const newState = Object.assign(Object.create(Object.getPrototypeOf(prev)), prev);
-      newState.toggleFreeBall();
-      return newState;
-    });
-  };
+  const handlePot = (ballValue: number) => updateGameState(state => state.pot(ballValue));
+  const handleToggleFreeBall = () => updateGameState(state => state.toggleFreeBall());
+  const handleFoul = (penalty: number) => updateGameState(state => state.foul(penalty));
+  const handleSwitchPlayer = () => updateGameState(state => state.switchPlayer());
+  const handleMiss = () => updateGameState(state => state.miss());
+  const handleSafe = () => updateGameState(state => state.safe());
+  const handleConcede = () => updateGameState(state => state.concedeFrame());
+  const handleNewFrame = () => updateGameState(state => state.startNextFrame());
+  const handleUndo = () => updateGameState(state => state.undo());
+  const handleTick = () => updateGameState(state => state.tick());
 
-  const handleFoul = (penalty: number) => {
-    setGameState(prev => {
-      const newState = Object.assign(Object.create(Object.getPrototypeOf(prev)), prev);
-      newState.foul(penalty);
-      return newState;
-    });
-  };
-
-  const handleSwitchPlayer = () => {
-    setGameState(prev => {
-      const newState = Object.assign(Object.create(Object.getPrototypeOf(prev)), prev);
-      newState.switchPlayer();
-      return newState;
-    });
-  };
-
-  const handleMiss = () => {
-    setGameState(prev => {
-      const newState = Object.assign(Object.create(Object.getPrototypeOf(prev)), prev);
-      newState.miss();
-      return newState;
-    });
-  };
-
-  const handleSafe = () => {
-    setGameState(prev => {
-      const newState = Object.assign(Object.create(Object.getPrototypeOf(prev)), prev);
-      newState.safe();
-      return newState;
-    });
-  };
-
-  const handleConcede = () => {
-    setGameState(prev => {
-      const newState = Object.assign(Object.create(Object.getPrototypeOf(prev)), prev);
-      newState.concedeFrame();
-      return newState;
-    });
-  };
-
-  const handleNewFrame = () => {
-    setGameState(prev => {
-      const newState = Object.assign(Object.create(Object.getPrototypeOf(prev)), prev);
-      newState.newFrame();
-      return newState;
-    });
-  };
-
-  const handleUndo = () => {
-    setGameState(prev => {
-      const newState = Object.assign(Object.create(Object.getPrototypeOf(prev)), prev);
-      newState.undo();
-      return newState;
-    });
-  };
-
-  const handleTick = () => {
-    setGameState(prev => {
-        const newState = Object.assign(Object.create(Object.getPrototypeOf(prev)), prev)
-        newState.tick();
-        return newState;
-    });
+  const handleStartMatch = (players: { name: string, shortName: string, handicap: number }[], settings: { matchName: string, redBalls: number, framesRequired: number }, startingPlayerIndex: number) => {
+    setGameState(new State(players, settings, startingPlayerIndex));
   };
 
   return (
     <Routes>
       <Route path="/" element={<Scoreboard gameState={gameState} onPot={handlePot} onToggleFreeBall={handleToggleFreeBall} onFoul={handleFoul} onSwitchPlayer={handleSwitchPlayer} onMiss={handleMiss} onSafe={handleSafe} onNewFrame={handleNewFrame} onConcede={handleConcede} onUndo={handleUndo} onTick={handleTick} />} />
-      <Route path="/setup" element={<Setup setGameState={setGameState} />} />
+      <Route path="/setup" element={<Setup onStartMatch={handleStartMatch} />} />
     </Routes>
   );
 };

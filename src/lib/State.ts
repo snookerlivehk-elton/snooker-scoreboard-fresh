@@ -54,12 +54,12 @@ export class State {
         startingPlayerIndex: number = 0
     ) {
         // Match Info
-        this.players = playersInfo.map(p => new Player(p.name, p.shortName));
+        this.players = playersInfo.map(p => new Player(p.name, p.shortName, p.handicap));
         this.settings = settings;
 
         // Apply handicap to initial scores
-        this.players.forEach((player, index) => {
-            player.score = playersInfo[index].handicap;
+        this.players.forEach((player) => {
+            player.score = player.handicap;
         });
 
         // Current State
@@ -93,6 +93,18 @@ export class State {
     // e.g., pot, foul, switchPlayer, etc.
     public pot(ballValue: number): void {
         this.saveState();
+
+        if (this.isRespotBlack) {
+            if (ballValue === 7) { // Black ball
+                this.players[this.currentPlayerIndex].add_points(7);
+                this.isFrameOver = true;
+            } else {
+                // Foul: potting the wrong ball during respot black
+                this.foul(ballValue);
+            }
+            this.checkFrameOver();
+            return;
+        }
 
         // If we are already clearing colours, validate the sequence.
         if (this.isClearingColours) {
@@ -129,7 +141,6 @@ export class State {
                 if (this.pottedColors.length === 6 && ballValue === 7) { // Potted final black
                     if (this.players[0].score === this.players[1].score) {
                         this.isRespotBlack = true;
-                        this.pottedColors.pop();
                     } else {
                         this.isFrameOver = true;
                     }
@@ -158,6 +169,8 @@ export class State {
 
         // After a pot, it's no longer a free ball
         this.isFreeBall = false;
+
+        this.checkFrameOver();
     }
 
     public toggleFreeBall(): void {
@@ -166,16 +179,17 @@ export class State {
 
     public foul(penalty: number): void {
         this.saveState();
-        // Rule: Foul on final black
-        if (this.redsRemaining === 0 && this.pottedColors.length === 6) {
-            this.isFrameOver = true;
+
+        if (this.isRespotBlack) {
             const opponentIndex = 1 - this.currentPlayerIndex;
-            this.players[opponentIndex].add_frame();
+            this.players[opponentIndex].add_points(penalty);
+            this.isFrameOver = true;
+            this.checkFrameOver();
             return;
         }
 
-        // Rule: Foul during respot black
-        if (this.isRespotBlack) {
+        // Rule: Foul on final black
+        if (this.redsRemaining === 0 && this.pottedColors.length === 6) {
             this.isFrameOver = true;
             const opponentIndex = 1 - this.currentPlayerIndex;
             this.players[opponentIndex].add_frame();
@@ -211,6 +225,8 @@ export class State {
 
         // It's now a free ball for the other player
         this.isFreeBall = true;
+
+        this.checkFrameOver();
     }
 
     public miss(): void {
@@ -264,30 +280,16 @@ export class State {
         this.players[opponentIndex].add_frame();
 
         const framesToWin = this.settings.framesRequired;
-        if (this.players[opponentIndex].frames === framesToWin) {
+        if (this.players[opponentIndex].frames >= Math.ceil(this.settings.framesRequired / 2)) {
             this.isMatchOver = true;
         } else {
-            this.newFrame();
+            this.startNextFrame();
         }
     }
 
-    public newFrame(): void {
-        // Determine winner of the frame and update their frame count
-        const winnerIndex = this.players[0].score > this.players[1].score ? 0 : 1;
-        this.players[winnerIndex].add_frame();
-
-        // Check if the match is over
-        const framesToWin = Math.ceil(this.settings.framesRequired / 2);
-        if (this.players[winnerIndex].frames === framesToWin) {
-            this.isMatchOver = true;
-            return; // No need to reset for a new frame if the match is over
-        }
-
+    public startNextFrame(): void {
         // Reset scores for the new frame to the player's original handicap
-        // This relies on the handicap being stored on the Player object, which is not shown here.
-        // A more robust solution would be to pass the original playersInfo to this method.
-        // For now, we assume the Player object has a 'handicap' property set at initialization.
-        this.players.forEach(p => p.score = (p as any).handicap || 0);
+        this.players.forEach(p => p.score = p.handicap);
 
         // Reset frame-specific state
         this.frame++;
@@ -296,36 +298,70 @@ export class State {
         this.isFreeBall = false;
         this.isFrameOver = false;
         this.isRespotBlack = false;
+        this.isClearingColours = false;
         this.breakScore = 0;
         this.breakTime = 0;
         this.status = 'playing';
         this.shotHistory = [];
         this.timers.frameTime = 0;
 
-        // Alternate starting player for the new frame
-        this.currentPlayerIndex = 1 - this.currentPlayerIndex;
+        // Alternate starting player for the new frame (P1 starts odd frames, P2 starts even frames)
+        this.currentPlayerIndex = (this.frame - 1) % 2;
     }
 
     public getRemainingPoints(): number {
         if (this.redsRemaining > 0) {
-            return this.redsRemaining * 8 + 27; // (red + black) + colors
+            return this.redsRemaining * 8 + 27;
         } else {
-            // Sum of remaining colors on the table
-            let points = 0;
-            const lastPotted = this.shotHistory.slice().reverse().find(s => s.type === 'pot');
-            if (!lastPotted || lastPotted.ball === 'red') {
-                points = 2+3+4+5+6+7;
+            const colourValues = [2, 3, 4, 5, 6, 7];
+            const remainingColours = colourValues.filter(v => !this.pottedColors.includes(v));
+            return remainingColours.reduce((a, b) => a + b, 0);
+        }
+    }
+
+    private checkFrameOver(): void {
+        if (this.isFrameOver) {
+            this.awardFrameToWinner();
+            return;
+        }
+
+        const p1 = this.players[0];
+        const p2 = this.players[1];
+
+        // Case 2: All balls potted (black is the last one)
+        if (this.isClearingColours && this.pottedColors.length === 6) {
+            if (p1.score === p2.score) {
+                this.isRespotBlack = true;
+                this.pottedColors.pop(); // Un-pot the black for the respot
             } else {
-                switch (lastPotted.ball) {
-                    case 'yellow': points = 3+4+5+6+7; break;
-                    case 'green': points = 4+5+6+7; break;
-                    case 'brown': points = 5+6+7; break;
-                    case 'blue': points = 6+7; break;
-                    case 'pink': points = 7; break;
-                    case 'black': points = 0; break;
-                }
+                this.isFrameOver = true;
             }
-            return points;
+        }
+
+        if (this.isFrameOver) {
+            this.awardFrameToWinner();
+        }
+    }
+
+    private awardFrameToWinner(): void {
+        const p1 = this.players[0];
+        const p2 = this.players[1];
+        let winnerIndex;
+
+        if (p1.score !== p2.score) {
+            winnerIndex = p1.score > p2.score ? 0 : 1;
+        } else {
+            // This case should only be hit on a foul on the final black,
+            // where scores are equal. The player who did not foul wins.
+            // foul() has already switched players, so the current player is the winner.
+            winnerIndex = this.currentPlayerIndex;
+        }
+
+        this.players[winnerIndex].add_frame();
+
+        const framesToWin = Math.ceil(this.settings.framesRequired / 2);
+        if (this.players[winnerIndex].frames >= framesToWin) {
+            this.isMatchOver = true;
         }
     }
 

@@ -42,7 +42,7 @@ export class Player {
     }
 
     public clone(): Player {
-        const newPlayer = new Player(this.name, this.shortName);
+        const newPlayer = new Player(this.name, this.shortName, this.handicap);
         newPlayer.score = this.score;
         newPlayer.frames = this.frames;
         newPlayer.highBreaks = [...this.highBreaks];
