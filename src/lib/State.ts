@@ -343,6 +343,11 @@ export class State {
     }
 
     private awardFrameToWinner(): void {
+        // If there's a break score, it belongs to the current player, who just finished the frame.
+        if (this.breakScore >= 20) {
+            this.players[this.currentPlayerIndex].add_high_break(this.breakScore, this.breakTime);
+        }
+
         const p1 = this.players[0];
         const p2 = this.players[1];
         let winnerIndex;
