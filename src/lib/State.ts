@@ -90,6 +90,30 @@ export class State {
         };
     }
 
+    public clone(): State {
+        const clonedState = new State([], this.settings, this.currentPlayerIndex);
+
+        clonedState.players = this.players.map(p => p.clone());
+
+        clonedState.frame = this.frame;
+        clonedState.redsRemaining = this.redsRemaining;
+        clonedState.pottedColors = [...this.pottedColors];
+        clonedState.mustPotRed = this.mustPotRed;
+        clonedState.isFreeBall = this.isFreeBall;
+        clonedState.isFrameOver = this.isFrameOver;
+        clonedState.isMatchOver = this.isMatchOver;
+        clonedState.isRespotBlack = this.isRespotBlack;
+        clonedState.isClearingColours = this.isClearingColours;
+        clonedState.breakScore = this.breakScore;
+        clonedState.breakTime = this.breakTime;
+        clonedState.status = this.status;
+        clonedState.history = [...this.history];
+        clonedState.shotHistory = [...this.shotHistory];
+        clonedState.timers = { ...this.timers };
+
+        return clonedState;
+    }
+
     // e.g., pot, foul, switchPlayer, etc.
     public pot(ballValue: number): void {
         this.saveState();
@@ -256,20 +280,26 @@ export class State {
 
     public undo(): void {
         if (this.history.length > 0) {
-            const prevState = this.history.pop();
-            if (prevState) {
-                Object.assign(this, prevState);
-                // Re-instantiate Player objects
-                this.players = prevState.players.map((playerData: any) => {
-                    const player = new Player(playerData.name, playerData.shortName);
-                    player.score = playerData.score;
-                    player.frames = playerData.frames;
-                    player.highBreaks = playerData.highBreaks;
-                    player.misses = playerData.misses;
-                    player.safeties = playerData.safeties;
-                    player.fouls = playerData.fouls;
-                    return player;
-                });
+            const prevStateJSON = this.history.pop();
+            if (prevStateJSON) {
+                const prevState = State.fromJSON(prevStateJSON);
+                this.players = prevState.players;
+                this.settings = prevState.settings;
+                this.frame = prevState.frame;
+                this.currentPlayerIndex = prevState.currentPlayerIndex;
+                this.redsRemaining = prevState.redsRemaining;
+                this.pottedColors = prevState.pottedColors;
+                this.mustPotRed = prevState.mustPotRed;
+                this.isFreeBall = prevState.isFreeBall;
+                this.isFrameOver = prevState.isFrameOver;
+                this.isMatchOver = prevState.isMatchOver;
+                this.isRespotBlack = prevState.isRespotBlack;
+                this.isClearingColours = prevState.isClearingColours;
+                this.breakScore = prevState.breakScore;
+                this.breakTime = prevState.breakTime;
+                this.status = prevState.status;
+                this.shotHistory = prevState.shotHistory;
+                this.timers = prevState.timers;
             }
         }
     }
@@ -383,12 +413,9 @@ export class State {
     }
 
     private saveState(): void {
-        const stateToSave = { ...this };
-        delete (stateToSave as any).history;
-        const stateCopy = JSON.parse(JSON.stringify(stateToSave));
-        this.history.push(stateCopy);
+        this.history.push(this.toJSON());
         if (this.history.length > 10) {
-            this.history.shift(); // Keep only the last 10 states
+            this.history.shift();
         }
     }
 
@@ -400,5 +427,47 @@ export class State {
                 this.breakTime++;
             }
         }
+    }
+
+    public toJSON(): any {
+        return {
+            players: this.players.map(p => p.toJSON()),
+            settings: this.settings,
+            frame: this.frame,
+            currentPlayerIndex: this.currentPlayerIndex,
+            redsRemaining: this.redsRemaining,
+            pottedColors: this.pottedColors,
+            mustPotRed: this.mustPotRed,
+            isFreeBall: this.isFreeBall,
+            isFrameOver: this.isFrameOver,
+            isMatchOver: this.isMatchOver,
+            isRespotBlack: this.isRespotBlack,
+            isClearingColours: this.isClearingColours,
+            breakScore: this.breakScore,
+            breakTime: this.breakTime,
+            status: this.status,
+            shotHistory: this.shotHistory,
+            timers: this.timers,
+        };
+    }
+
+    public static fromJSON(json: any): State {
+        const state = new State(json.players, json.settings, json.currentPlayerIndex);
+        state.players = json.players.map((p: any) => Player.fromJSON(p));
+        state.frame = json.frame;
+        state.redsRemaining = json.redsRemaining;
+        state.pottedColors = json.pottedColors;
+        state.mustPotRed = json.mustPotRed;
+        state.isFreeBall = json.isFreeBall;
+        state.isFrameOver = json.isFrameOver;
+        state.isMatchOver = json.isMatchOver;
+        state.isRespotBlack = json.isRespotBlack;
+        state.isClearingColours = json.isClearingColours;
+        state.breakScore = json.breakScore;
+        state.breakTime = json.breakTime;
+        state.status = json.status;
+        state.shotHistory = json.shotHistory;
+        state.timers = json.timers;
+        return state;
     }
 }

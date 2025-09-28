@@ -3,21 +3,22 @@ import { Link } from 'react-router-dom';
 import { State } from './lib/State';
 
 interface ScoreboardProps {
-    gameState: State;
+    state: State;
     onPot: (ballValue: number) => void;
-    onToggleFreeBall: () => void;
     onFoul: (penalty: number) => void;
-    onSwitchPlayer: () => void;
     onMiss: () => void;
     onSafe: () => void;
-    onNewFrame: () => void;
     onConcede: () => void;
+    onNextFrame: () => void;
+    onToggleFreeBall: () => void;
+    onSwitchPlayer: () => void;
     onUndo: () => void;
     onTick: () => void;
+    onEndMatch: () => void; // Add this line
 }
 
-const Scoreboard: React.FC<ScoreboardProps> = ({ gameState, onPot, onToggleFreeBall, onFoul, onSwitchPlayer, onMiss, onSafe, onNewFrame, onConcede, onUndo, onTick }) => {
-    const { players, currentPlayerIndex, redsRemaining, pottedColors, breakScore, mustPotRed, isFreeBall, timers, settings, isFrameOver, isMatchOver, isClearingColours, breakTime } = gameState;
+const Scoreboard: React.FC<ScoreboardProps> = ({ state, onPot, onFoul, onMiss, onSafe, onConcede, onNextFrame, onToggleFreeBall, onSwitchPlayer, onUndo, onTick, onEndMatch }) => {
+    const { players, currentPlayerIndex, redsRemaining, pottedColors, breakScore, mustPotRed, isFreeBall, timers, settings, isFrameOver, isMatchOver, isClearingColours, breakTime } = state;
     const [player1, player2] = players;
     const [isFoulMode, setIsFoulMode] = useState(false);
 
@@ -53,7 +54,7 @@ const Scoreboard: React.FC<ScoreboardProps> = ({ gameState, onPot, onToggleFreeB
     const handleSwitchPlayer = () => {
         onSwitchPlayer();
     };
-    const handleEndMatch = () => console.log('End Match');
+
     const handleConcede = () => {
         if (window.confirm('Are you sure you want to concede the frame?')) {
             onConcede();
@@ -85,7 +86,7 @@ const Scoreboard: React.FC<ScoreboardProps> = ({ gameState, onPot, onToggleFreeB
 
         // In a respot black scenario, the winner is determined by who has more frames,
         // as the foul logic already awarded the frame.
-        if (gameState.isRespotBlack) {
+        if (state.isRespotBlack) {
             if (player1.frames > player2.frames) return player1.name;
             if (player2.frames > player1.frames) return player2.name;
         }
@@ -114,19 +115,19 @@ const Scoreboard: React.FC<ScoreboardProps> = ({ gameState, onPot, onToggleFreeB
                 <div className="frame-over-overlay">
                     <h2>Frame Over</h2>
                     <h3>Winner: {getWinner()}</h3>
-                    <button onClick={onNewFrame}>New Frame</button>
+                    <button onClick={onNextFrame}>New Frame</button>
                 </div>
             )}
             {/* Top Area */}
             <div className="top-area">
                 <div className="match-name-display">
-                    {gameState.settings.matchName}
+                    {settings.matchName}
                 </div>
                 <div className="score-display">
                     <span className={`player-score ${currentPlayerIndex === 0 ? 'active' : ''}`}>
                         {player1.score}
                     </span>
-                    <span className="frame-scores">{player1.frames} ({settings.framesRequired}) {player2.frames}</span>
+                    <span className="frame-scores">{player1.frames} (目標局數) {player2.frames}</span>
                     <span className={`player-score ${currentPlayerIndex === 1 ? 'active' : ''}`}>
                         {player2.score}
                     </span>
@@ -134,7 +135,7 @@ const Scoreboard: React.FC<ScoreboardProps> = ({ gameState, onPot, onToggleFreeB
                 <div className='info-bar'>
                     <span>Break: {breakScore}</span>
                     <span>{getAhead()}</span>
-                    <span>Remaining: {gameState.getRemainingPoints()}</span>
+                    <span>Remaining: {state.getRemainingPoints()}</span>
                 </div>
             </div>
 
@@ -165,7 +166,7 @@ const Scoreboard: React.FC<ScoreboardProps> = ({ gameState, onPot, onToggleFreeB
                         <div className="action-buttons">
                             <button onClick={onToggleFreeBall} className={isFreeBall ? 'active' : ''}>Free Ball</button>
                             <button onClick={handleConcede}>Concede</button>
-                            <button onClick={handleEndMatch}>End Match</button>
+                            <button onClick={onEndMatch}>End Match</button>
                         </div>
                         <div className="action-buttons">
                             <button onClick={onMiss}>Miss</button>
@@ -173,7 +174,7 @@ const Scoreboard: React.FC<ScoreboardProps> = ({ gameState, onPot, onToggleFreeB
                             <button onClick={handleSwitchPlayer}>Switch Player</button>
                         </div>
                         <div className="side-by-side-buttons">
-                            <Link to="/setup" className="button">Setup</Link>
+                            <button onClick={onEndMatch} className="button">Setup</button>
                             <button onClick={onUndo} className="button">Undo</button>
                         </div>
                     </>

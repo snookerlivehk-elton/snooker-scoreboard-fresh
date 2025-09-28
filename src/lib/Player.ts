@@ -51,4 +51,29 @@ export class Player {
         newPlayer.fouls = this.fouls;
         return newPlayer;
     }
+
+    public toJSON(): any {
+        return {
+            name: this.name,
+            shortName: this.shortName,
+            score: this.score,
+            frames: this.frames,
+            highBreaks: this.highBreaks,
+            misses: this.misses,
+            safeties: this.safeties,
+            fouls: this.fouls,
+            handicap: this.handicap,
+        };
+    }
+
+    public static fromJSON(json: any): Player {
+        const player = new Player(json.name, json.shortName, json.handicap);
+        player.score = json.score;
+        player.frames = json.frames;
+        player.highBreaks = json.highBreaks;
+        player.misses = json.misses;
+        player.safeties = json.safeties;
+        player.fouls = json.fouls;
+        return player;
+    }
 }
