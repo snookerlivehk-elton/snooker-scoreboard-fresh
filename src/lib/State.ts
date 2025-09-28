@@ -46,9 +46,9 @@ export class State {
     };
 
     constructor(
-        playersInfo: { name: string, shortName: string }[] = [
-            { name: 'Player 1', shortName: 'P1' },
-            { name: 'Player 2', shortName: 'P2' }
+        playersInfo: { name: string, shortName: string, handicap: number }[] = [
+            { name: 'Player 1', shortName: 'P1', handicap: 0 },
+            { name: 'Player 2', shortName: 'P2', handicap: 0 }
         ],
         settings: { matchName: string, redBalls: number, framesRequired: number } = { matchName: 'Snooker Match', redBalls: 15, framesRequired: 1 },
         startingPlayerIndex: number = 0
@@ -56,6 +56,11 @@ export class State {
         // Match Info
         this.players = playersInfo.map(p => new Player(p.name, p.shortName));
         this.settings = settings;
+
+        // Apply handicap to initial scores
+        this.players.forEach((player, index) => {
+            player.score = playersInfo[index].handicap;
+        });
 
         // Current State
         this.frame = 1;
@@ -88,10 +93,13 @@ export class State {
     // e.g., pot, foul, switchPlayer, etc.
     public pot(ballValue: number): void {
         this.saveState();
+
+        // If we are already clearing colours, validate the sequence.
         if (this.isClearingColours) {
             const expectedSequence = [2, 3, 4, 5, 6, 7];
             const nextBallInSequence = expectedSequence[this.pottedColors.length];
             if (ballValue !== nextBallInSequence) {
+                // Invalid pot during clearing sequence
                 this.miss();
                 return;
             }
@@ -101,36 +109,41 @@ export class State {
         let points = ballValue;
 
         if (this.isFreeBall && ballValue > 1) {
-            points = 1; // On a free ball, any color potted counts as 1
+            points = 1;
         }
 
         player.add_points(points);
         this.breakScore += points;
 
-        if (ballValue === 1) {
+        if (ballValue === 1) { // Potted a red
             if (!this.isFreeBall && this.redsRemaining > 0) {
                 this.redsRemaining--;
             }
-            this.mustPotRed = false; // After potting a red, must pot a color
+            this.mustPotRed = false;
         } else { // Potted a color
-            if (this.redsRemaining > 0) {
-                this.mustPotRed = true; // After a color, must pot a red
-            } else {
-                this.isClearingColours = true;
-                // Clearing colors
+            if (this.isClearingColours) {
+                // This is a valid color in the clearing sequence
                 if (!this.isFreeBall) {
                     this.pottedColors.push(ballValue);
                 }
-
-                if (this.pottedColors.length === 6 && ballValue === 7) {
-                    // Check for a tie
+                if (this.pottedColors.length === 6 && ballValue === 7) { // Potted final black
                     if (this.players[0].score === this.players[1].score) {
                         this.isRespotBlack = true;
-                        // The black is respotted, so we don't consider it "potted" in the sequence
                         this.pottedColors.pop();
                     } else {
                         this.isFrameOver = true;
                     }
+                }
+            } else { // Not yet clearing colours
+                if (this.redsRemaining > 0) {
+                    // This is a color potted while reds are on the table
+                    this.mustPotRed = true;
+                } else {
+                    // This is the color potted right after the last red.
+                    // Now, the clearing of colours will begin.
+                    this.isClearingColours = true;
+                    // DO NOT add this ball to pottedColors.
+                    // The next ball to be potted will be the yellow (2).
                 }
             }
         }
@@ -270,8 +283,11 @@ export class State {
             return; // No need to reset for a new frame if the match is over
         }
 
-        // Reset scores for the new frame
-        this.players.forEach(p => p.reset_score());
+        // Reset scores for the new frame to the player's original handicap
+        // This relies on the handicap being stored on the Player object, which is not shown here.
+        // A more robust solution would be to pass the original playersInfo to this method.
+        // For now, we assume the Player object has a 'handicap' property set at initialization.
+        this.players.forEach(p => p.score = (p as any).handicap || 0);
 
         // Reset frame-specific state
         this.frame++;
@@ -333,6 +349,16 @@ export class State {
         this.history.push(stateCopy);
         if (this.history.length > 10) {
             this.history.shift(); // Keep only the last 10 states
+        }
+    }
+
+    public tick(): void {
+        if (this.status === 'playing') {
+            this.timers.frameTime++;
+            this.timers.matchTime++;
+            if (this.breakScore > 0) {
+                this.breakTime++;
+            }
         }
     }
 }

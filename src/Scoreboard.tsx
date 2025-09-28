@@ -13,12 +13,18 @@ interface ScoreboardProps {
     onNewFrame: () => void;
     onConcede: () => void;
     onUndo: () => void;
+    onTick: () => void;
 }
 
-const Scoreboard: React.FC<ScoreboardProps> = ({ gameState, onPot, onToggleFreeBall, onFoul, onSwitchPlayer, onMiss, onSafe, onNewFrame, onConcede, onUndo }) => {
-    const { players, currentPlayerIndex, redsRemaining, pottedColors, breakScore, mustPotRed, isFreeBall, timers, settings, isFrameOver, isMatchOver, isClearingColours } = gameState;
+const Scoreboard: React.FC<ScoreboardProps> = ({ gameState, onPot, onToggleFreeBall, onFoul, onSwitchPlayer, onMiss, onSafe, onNewFrame, onConcede, onUndo, onTick }) => {
+    const { players, currentPlayerIndex, redsRemaining, pottedColors, breakScore, mustPotRed, isFreeBall, timers, settings, isFrameOver, isMatchOver, isClearingColours, breakTime } = gameState;
     const [player1, player2] = players;
     const [isFoulMode, setIsFoulMode] = useState(false);
+
+    useEffect(() => {
+        const timerId = setInterval(onTick, 1000);
+        return () => clearInterval(timerId);
+    }, [onTick]);
 
     // Use the onPot from props
     const handlePot = (ballValue: number) => {
@@ -71,7 +77,7 @@ const Scoreboard: React.FC<ScoreboardProps> = ({ gameState, onPot, onToggleFreeB
         const [aheadPlayer, behindPlayer] = p1.score > p2.score ? [p1, p2] : [p2, p1];
         const diff = aheadPlayer.score - behindPlayer.score;
 
-        return `${aheadPlayer.shortName} is ${diff} ahead.`;
+        return `${aheadPlayer.name} is ${diff} ahead.`;
     }
 
     const getWinner = () => {
@@ -180,6 +186,7 @@ const Scoreboard: React.FC<ScoreboardProps> = ({ gameState, onPot, onToggleFreeB
                     <div className="reds-left">Reds Left: {redsRemaining}</div>
                 </div>
                 <div className="high-breaks-container">
+                    <h3>{player1.name} ({player1.shortName})</h3>
                     <div className="high-breaks">
                         <h3>P1 High Breaks</h3>
                         <ul>
@@ -187,6 +194,7 @@ const Scoreboard: React.FC<ScoreboardProps> = ({ gameState, onPot, onToggleFreeB
                         </ul>
                     </div>
                     <div className="high-breaks">
+                        <h3>{player2.name} ({player2.shortName})</h3>
                         <h3>P2 High Breaks</h3>
                         <ul>
                             {player2.highBreaks.map((br, i) => <li key={i}>{br.score} ({formatTime(br.time)})</li>)}
@@ -217,6 +225,7 @@ const Scoreboard: React.FC<ScoreboardProps> = ({ gameState, onPot, onToggleFreeB
                 <div className="timers">
                     <div>Frame: {formatTime(timers.frameTime)}</div>
                     <div>Match: {formatTime(timers.matchTime)}</div>
+                    <div>Break: {formatTime(breakTime)}</div>
                 </div>
             </div>
         </div>

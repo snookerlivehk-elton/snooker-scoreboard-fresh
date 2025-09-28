@@ -12,16 +12,18 @@ const Setup: React.FC<SetupProps> = ({ setGameState }) => {
     const [matchName, setMatchName] = useState('Snooker Match');
     const [p1Name, setP1Name] = useState('Player 1');
     const [p1ShortName, setP1ShortName] = useState('P1');
+    const [p1Handicap, setP1Handicap] = useState(0);
     const [p2Name, setP2Name] = useState('Player 2');
     const [p2ShortName, setP2ShortName] = useState('P2');
+    const [p2Handicap, setP2Handicap] = useState(0);
     const [redBalls, setRedBalls] = useState(15);
     const [framesRequired, setFramesRequired] = useState(1);
     const [startingPlayerIndex, setStartingPlayerIndex] = useState(0);
 
     const handleStartMatch = () => {
         const playersInfo = [
-            { name: p1Name, shortName: p1ShortName },
-            { name: p2Name, shortName: p2ShortName },
+            { name: p1Name, shortName: p1ShortName, handicap: p1Handicap },
+            { name: p2Name, shortName: p2ShortName, handicap: p2Handicap },
         ];
         const settings = { matchName, redBalls, framesRequired };
 
@@ -49,8 +51,12 @@ const Setup: React.FC<SetupProps> = ({ setGameState }) => {
                     <input type="text" value={p1Name} onChange={(e) => setP1Name(e.target.value)} />
                 </div>
                 <div className="input-group">
-                    <label>Short Name:</label>
+                    <label>Member ID:</label>
                     <input type="text" value={p1ShortName} onChange={(e) => setP1ShortName(e.target.value)} />
+                </div>
+                <div className="input-group">
+                    <label>Handicap:</label>
+                    <input type="number" value={p1Handicap} onChange={(e) => setP1Handicap(parseInt(e.target.value, 10))} />
                 </div>
             </div>
             <div className="player-setup">
@@ -60,8 +66,12 @@ const Setup: React.FC<SetupProps> = ({ setGameState }) => {
                     <input type="text" value={p2Name} onChange={(e) => setP2Name(e.target.value)} />
                 </div>
                 <div className="input-group">
-                    <label>Short Name:</label>
+                    <label>Member ID:</label>
                     <input type="text" value={p2ShortName} onChange={(e) => setP2ShortName(e.target.value)} />
+                </div>
+                <div className="input-group">
+                    <label>Handicap:</label>
+                    <input type="number" value={p2Handicap} onChange={(e) => setP2Handicap(parseInt(e.target.value, 10))} />
                 </div>
             </div>
             <div className="setting-item">

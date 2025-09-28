@@ -5,76 +5,91 @@ import Setup from './Setup';
 import { State } from './lib/State';
 
 const App: React.FC = () => {
-  // Initialize with a default state
-  const [gameState, setGameState] = useState(new State());
-
-  // This is a simple way to force a re-render when the state object is mutated.
-  const [, setTick] = useState(0);
-  const forceUpdate = () => setTick(tick => tick + 1);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      if (gameState.status === 'playing') {
-        gameState.timers.matchTime++;
-        gameState.timers.frameTime++;
-        if (gameState.breakScore > 0) {
-          gameState.breakTime++;
-        }
-        forceUpdate();
-      }
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [gameState]);
+  const [gameState, setGameState] = useState(() => new State());
 
   const handlePot = (ballValue: number) => {
-    gameState.pot(ballValue);
-    forceUpdate();
+    setGameState(prev => {
+      const newState = Object.assign(Object.create(Object.getPrototypeOf(prev)), prev);
+      newState.pot(ballValue);
+      return newState;
+    });
   };
 
   const handleToggleFreeBall = () => {
-    gameState.toggleFreeBall();
-    forceUpdate();
+    setGameState(prev => {
+      const newState = Object.assign(Object.create(Object.getPrototypeOf(prev)), prev);
+      newState.toggleFreeBall();
+      return newState;
+    });
   };
 
   const handleFoul = (penalty: number) => {
-    gameState.foul(penalty);
-    forceUpdate();
+    setGameState(prev => {
+      const newState = Object.assign(Object.create(Object.getPrototypeOf(prev)), prev);
+      newState.foul(penalty);
+      return newState;
+    });
   };
 
   const handleSwitchPlayer = () => {
-    gameState.switchPlayer();
-    forceUpdate();
+    setGameState(prev => {
+      const newState = Object.assign(Object.create(Object.getPrototypeOf(prev)), prev);
+      newState.switchPlayer();
+      return newState;
+    });
   };
 
   const handleMiss = () => {
-    gameState.miss();
-    forceUpdate();
+    setGameState(prev => {
+      const newState = Object.assign(Object.create(Object.getPrototypeOf(prev)), prev);
+      newState.miss();
+      return newState;
+    });
   };
 
   const handleSafe = () => {
-    gameState.safe();
-    forceUpdate();
+    setGameState(prev => {
+      const newState = Object.assign(Object.create(Object.getPrototypeOf(prev)), prev);
+      newState.safe();
+      return newState;
+    });
   };
 
   const handleConcede = () => {
-    gameState.concedeFrame();
-    forceUpdate();
+    setGameState(prev => {
+      const newState = Object.assign(Object.create(Object.getPrototypeOf(prev)), prev);
+      newState.concedeFrame();
+      return newState;
+    });
   };
 
   const handleNewFrame = () => {
-    gameState.newFrame();
-    forceUpdate();
+    setGameState(prev => {
+      const newState = Object.assign(Object.create(Object.getPrototypeOf(prev)), prev);
+      newState.newFrame();
+      return newState;
+    });
   };
 
   const handleUndo = () => {
-    gameState.undo();
-    forceUpdate();
+    setGameState(prev => {
+      const newState = Object.assign(Object.create(Object.getPrototypeOf(prev)), prev);
+      newState.undo();
+      return newState;
+    });
+  };
+
+  const handleTick = () => {
+    setGameState(prev => {
+        const newState = Object.assign(Object.create(Object.getPrototypeOf(prev)), prev)
+        newState.tick();
+        return newState;
+    });
   };
 
   return (
     <Routes>
-      <Route path="/" element={<Scoreboard gameState={gameState} onPot={handlePot} onToggleFreeBall={handleToggleFreeBall} onFoul={handleFoul} onSwitchPlayer={handleSwitchPlayer} onMiss={handleMiss} onSafe={handleSafe} onNewFrame={handleNewFrame} onConcede={handleConcede} onUndo={handleUndo} />} />
+      <Route path="/" element={<Scoreboard gameState={gameState} onPot={handlePot} onToggleFreeBall={handleToggleFreeBall} onFoul={handleFoul} onSwitchPlayer={handleSwitchPlayer} onMiss={handleMiss} onSafe={handleSafe} onNewFrame={handleNewFrame} onConcede={handleConcede} onUndo={handleUndo} onTick={handleTick} />} />
       <Route path="/setup" element={<Setup setGameState={setGameState} />} />
     </Routes>
   );

@@ -1,12 +1,25 @@
 export class Player {
-    public score: number = 0;
-    public frames: number = 0;
-    public highBreaks: { score: number; time: number }[] = [];
-    public misses: number = 0;
-    public safeties: number = 0;
-    public fouls: number = 0;
+    public name: string;
+    public shortName: string;
+    public score: number;
+    public frames: number;
+    public highBreaks: { score: number; time: number }[];
+    public misses: number;
+    public safeties: number;
+    public fouls: number;
+    public handicap: number;
 
-    constructor(public name: string, public shortName: string) {}
+    constructor(name: string, shortName: string, handicap: number = 0) {
+        this.name = name;
+        this.shortName = shortName;
+        this.score = 0;
+        this.frames = 0;
+        this.highBreaks = [];
+        this.misses = 0;
+        this.safeties = 0;
+        this.fouls = 0;
+        this.handicap = handicap;
+    }
 
     public add_points(points: number): void {
         this.score += points;
