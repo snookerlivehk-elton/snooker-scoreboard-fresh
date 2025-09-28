@@ -279,7 +279,6 @@ export class State {
         const opponentIndex = 1 - this.currentPlayerIndex;
         this.players[opponentIndex].add_frame();
 
-        const framesToWin = this.settings.framesRequired;
         if (this.players[opponentIndex].frames >= Math.ceil(this.settings.framesRequired / 2)) {
             this.isMatchOver = true;
         } else {

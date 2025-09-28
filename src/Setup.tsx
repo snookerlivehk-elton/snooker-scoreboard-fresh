@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { State } from './lib/State';
 
 interface SetupProps {
     onStartMatch: (players: { name: string, shortName: string, handicap: number }[], settings: { matchName: string, redBalls: number, framesRequired: number }, startingPlayerIndex: number) => void;
