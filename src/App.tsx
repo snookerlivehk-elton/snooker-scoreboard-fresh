@@ -5,8 +5,6 @@ import Login from './Login';
 import Scoreboard from './Scoreboard';
 import Setup from './Setup';
 import { State } from './lib/State';
-import { Player } from './lib/Player';
-import { Ball } from './lib/Ball';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -37,10 +35,14 @@ const App: React.FC = () => {
     });
   };
 
-  const handleStart = (players: Player[], raceTo: number) => {
-    const newGame = new State(players.map(p => ({ name: p.name, shortName: p.shortName, handicap: p.handicap })), { matchName: 'Snooker Match', redBalls: 15, framesRequired: raceTo });
+  const handleStart = (
+    players: { name: string; shortName: string; handicap: number }[],
+    settings: { matchName: string; redBalls: number; framesRequired: number },
+    startingPlayerIndex: number
+  ) => {
+    const newGame = new State(players, settings, startingPlayerIndex);
     setGameState(newGame);
-    setCurrentView('scoreboard'); // Add this line to switch the view
+    setCurrentView('scoreboard');
   };
 
   const handleNextFrame = () => {
